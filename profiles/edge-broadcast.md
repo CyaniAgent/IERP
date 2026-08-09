@@ -70,7 +70,7 @@ Auto-destroy: cache, token, session state
 | `heartbeat_miss_threshold` | 3 | integer | Consecutive misses before task abort |
 | `quota_burst_threshold_pct` | 150 | integer | Quota burst tolerance (%) |
 | `sensitive_content_action` | `"abort"` | enum | Action on sensitive content: `abort`, `blur`, `redact` |
-| `admin_approval_required` | `true` | boolean | Whether admin approval is mandatory |
+| `admin_approval_mode` | `"single"` | enum | Approval mode: `single`, `multi`, `hybrid`, `auto` |
 
 ### 4.2 Instance-Level Overrides
 
@@ -274,7 +274,7 @@ See [spec/security.md §11](../spec/security.md#11-edge-broadcast-security-consi
 - Non-public content policy (abort relay)
 - GeoIP handling and privacy
 - Cache encryption and destruction
-- Mandatory administrator approval
+- Configurable administrator approval (single/multi/hybrid/auto)
 - Sensitive content rules
 
 ---
@@ -289,7 +289,7 @@ Protocol developers implementing edge-broadcast MUST:
 - [ ] Implement GeoIP-based peer selection
 - [ ] Implement retry with exponential backoff
 - [ ] Implement cache encryption and secure destruction
-- [ ] Implement administrator approval mechanism (mandatory)
+- [ ] Implement administrator approval mechanism (configurable: single/multi/hybrid/auto)
 - [ ] Define sensitive content rules (abort/blur/redact)
 - [ ] Generate Receipts with delivery stats
 - [ ] Implement TaskEnd auto-termination on threshold exceeded
