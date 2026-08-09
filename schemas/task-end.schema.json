@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ierp-task-end-v0.1",
+  "title": "IERP Task End",
+  "description": "Schema for IERP TaskEnd message.",
+  "type": "object",
+  "required": ["type", "task_id", "peer", "reason", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "TaskEnd"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "peer": {
+      "type": "string",
+      "pattern": "^ierp:.+"
+    },
+    "reason": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "trust_violation",
+        "heartbeat_miss",
+        "quota_burst",
+        "retry_exceeded",
+        "admin_revoked",
+        "target_offline",
+        "content_violation",
+        "ttl_expired"
+      ],
+      "description": "Reason for task termination."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "partial_failure_log": {
+      "type": ["object", "null"],
+      "description": "Details of partial delivery failures (for edge-broadcast).",
+      "properties": {
+        "total_posts": { "type": "integer", "minimum": 0 },
+        "delivered": { "type": "integer", "minimum": 0 },
+        "failed": { "type": "integer", "minimum": 0 },
+        "failed_post_ids": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "failure_reasons": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Protocol-specific extension fields.",
+      "additionalProperties": true
+    }
+  }
+}

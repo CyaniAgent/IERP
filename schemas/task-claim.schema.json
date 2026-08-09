@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ierp-task-claim-v0.1",
+  "title": "IERP Task Claim",
+  "description": "Schema for IERP TaskClaim message.",
+  "type": "object",
+  "required": ["type", "task_id", "peer", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "TaskClaim"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "peer": {
+      "type": "string",
+      "pattern": "^ierp:.+",
+      "description": "Peer ID of the claiming assisting instance."
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "claimed_quota": {
+      "type": "object",
+      "description": "Quota the peer claims it can fulfill.",
+      "properties": {
+        "bandwidth_out_mbps": { "type": "integer", "minimum": 0 },
+        "bandwidth_in_mbps": { "type": "integer", "minimum": 0 },
+        "connections": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Protocol-specific extension fields.",
+      "additionalProperties": true
+    }
+  }
+}

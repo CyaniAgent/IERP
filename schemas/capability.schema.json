@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ierp-capability-v0.1",
+  "title": "IERP Capability Update",
+  "description": "Schema for IERP CapabilityUpdate message.",
+  "type": "object",
+  "required": ["type", "peer", "supported_profiles", "updated_at"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "CapabilityUpdate"
+    },
+    "peer": {
+      "type": "string",
+      "pattern": "^ierp:.+"
+    },
+    "supported_profiles": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 1,
+      "description": "List of supported profile IDs."
+    },
+    "bandwidth_out_mbps": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Available outbound bandwidth in Mbps."
+    },
+    "bandwidth_in_mbps": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Available inbound bandwidth in Mbps."
+    },
+    "max_connections": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Maximum concurrent connections."
+    },
+    "region": {
+      "type": "string",
+      "description": "GeoIP region hint (e.g., asia-east, us-west)."
+    },
+    "geoip_precision": {
+      "type": "string",
+      "enum": ["exact", "region", "country", "hidden"],
+      "default": "region",
+      "description": "GeoIP precision level declared by this peer."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of capability update."
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Protocol-specific extension fields.",
+      "additionalProperties": true
+    }
+  }
+}

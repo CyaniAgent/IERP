@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ierp-task-heartbeat-v0.1",
+  "title": "IERP Task Heartbeat",
+  "description": "Schema for IERP TaskHeartbeat message.",
+  "type": "object",
+  "required": ["type", "task_id", "peer", "timestamp"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "TaskHeartbeat"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "peer": {
+      "type": "string",
+      "pattern": "^ierp:.+"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivered_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Items delivered since last heartbeat (for edge-broadcast)."
+    },
+    "failed_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Items failed since last heartbeat (for edge-broadcast)."
+    },
+    "current_load_pct": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Current utilization percentage."
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Protocol-specific extension fields.",
+      "additionalProperties": true
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ierp-task-grant-v0.1",
+  "title": "IERP Task Grant",
+  "description": "Schema for IERP TaskGrant message.",
+  "type": "object",
+  "required": ["type", "task_id", "peer", "granted_quota", "relay_endpoint", "access_token", "lease_seconds"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "TaskGrant"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "peer": {
+      "type": "string",
+      "pattern": "^ierp:.+",
+      "description": "Peer ID of the granted assisting instance."
+    },
+    "granted_quota": {
+      "type": "object",
+      "description": "Actual granted resource quota.",
+      "properties": {
+        "bandwidth_out_mbps": { "type": "integer", "minimum": 0 },
+        "bandwidth_in_mbps": { "type": "integer", "minimum": 0 },
+        "connections": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "relay_endpoint": {
+      "type": "string",
+      "format": "uri",
+      "description": "URL of the relay endpoint for this task."
+    },
+    "access_token": {
+      "type": "string",
+      "description": "Short-lived task-scoped access token (JWT/PASETO)."
+    },
+    "lease_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600,
+      "description": "Lease duration; heartbeat required to renew."
+    },
+    "geoip_hint": {
+      "type": "object",
+      "description": "GeoIP data for peer selection (encrypted in transit).",
+      "properties": {
+        "origin_region": { "type": "string" },
+        "target_region": { "type": "string" },
+        "precision": {
+          "type": "string",
+          "enum": ["exact", "region", "country", "hidden"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "encryption_key_ref": {
+      "type": "string",
+      "description": "Reference to ephemeral encryption key for content relay."
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Protocol-specific extension fields.",
+      "additionalProperties": true
+    }
+  }
+}

@@ -349,35 +349,52 @@ The `file-relay` profile should support:
 - maximum temporary storage limits;
 - explicit no-persist or temporary-cache policies.
 
+### `edge-broadcast`
+
+The `edge-broadcast` profile is intended for high-volume post broadcasting across federated social instances.
+
+Typical use cases:
+
+- an instance needs to broadcast ≥50 posts to 50+ remote instances;
+- ActivityPub federation queue is congested and needs load relief;
+- real-time post delivery with GeoIP-based就近 routing;
+- temporary edge acceleration for trending or viral content.
+
+The `edge-broadcast` profile should support:
+
+- batch post delivery (single Task = delivery to one target instance);
+- AES-256 encrypted transit with Base64 + salt;
+- GeoIP-based peer selection with configurable precision;
+- retry with exponential backoff and partial failure reporting;
+- mandatory administrator approval;
+- automatic cache destruction on task completion;
+- non-public content abort policy;
+- ActivityPub translation layer (independent service).
+
 ---
 
 ## Security model
 
-IERP assumes that peers are explicitly trusted, not globally open.
+> **Full specification:** [spec/security.md](spec/security.md)
 
-Implementations should enforce:
+IERP security is built on **Zero Trust** and **Principle of Least Privilege** foundations:
 
-- HTTPS for all control-plane traffic;
-- strong TLS for data-plane traffic;
-- authenticated peer identities;
-- cryptographic message signatures;
-- short-lived access tokens;
-- replay protection using timestamps and nonces;
-- quota enforcement;
-- rate limiting;
-- peer suspension and removal;
-- audit logging.
+- **Never trust, always verify** — Every peer interaction requires cryptographic authentication; trust is continuously re-evaluated, not statically assigned.
+- **Minimum permission** — Tasks are bounded by scoped Quota (bandwidth, connections), TTL, data direction, and content type. Peers receive only what they need, for the shortest time needed.
+- **Assume breach** — Lease auto-expiration, anomaly detection, and immediate session revocation limit blast radius.
+- **Control/data plane separation** — Trust decisions and relay traffic are logically isolated.
 
-A recommended baseline is:
+### Security baseline
 
-```text
-Peer identity: Ed25519 key pair
-Control transport: HTTPS
-Message signing: Ed25519
-Access tokens: JWT or PASETO
-Replay protection: timestamp + nonce
-Lease renewal: periodic heartbeat
-```
+| Layer | Mechanism |
+|-------|-----------|
+| Peer identity | Ed25519 key pair |
+| Message signing | Ed25519 on all control messages |
+| Access tokens | JWT or PASETO, task-scoped, short-lived |
+| Transport | HTTPS (control) / TLS 1.3 (data) |
+| Replay protection | Timestamp + nonce |
+| Lease management | Periodic heartbeat with trust re-evaluation |
+| Audit | Receipts with trust scores and anomaly records |
 
 IERP does not require a global certificate authority. Trust is established through direct peer invitation and administrator approval.
 
@@ -485,6 +502,7 @@ spec/
 profiles/
   voice-relay.md
   file-relay.md
+  edge-broadcast.md
 
 schemas/
   peer.schema.json

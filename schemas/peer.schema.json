@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ierp-peer-v0.1",
+  "title": "IERP Peer",
+  "description": "Schema for IERP Peer identity and endpoint declaration.",
+  "type": "object",
+  "required": ["peer_id", "public_key", "endpoint"],
+  "additionalProperties": false,
+  "properties": {
+    "peer_id": {
+      "type": "string",
+      "pattern": "^ierp:.+",
+      "description": "Stable unique identifier for the peer instance."
+    },
+    "public_key": {
+      "type": "string",
+      "description": "Ed25519 public key in multibase format."
+    },
+    "endpoint": {
+      "type": "string",
+      "format": "uri",
+      "description": "Control plane URL for peer-to-peer communication."
+    },
+    "display_name": {
+      "type": "string",
+      "description": "Human-readable peer name (optional)."
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Protocol-specific extension fields (x- prefix namespace).",
+      "additionalProperties": true
+    }
+  }
+}

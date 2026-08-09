@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ierp-receipt-v0.1",
+  "title": "IERP Receipt",
+  "description": "Schema for IERP Receipt message.",
+  "type": "object",
+  "required": ["type", "task_id", "peer", "profile", "started_at", "ended_at", "end_reason"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "Receipt"
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "peer": {
+      "type": "string",
+      "pattern": "^ierp:.+"
+    },
+    "profile": {
+      "type": "string",
+      "description": "Profile used for this task."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "ended_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_reason": {
+      "type": "string",
+      "enum": [
+        "normal",
+        "trust_violation",
+        "heartbeat_miss",
+        "quota_burst",
+        "retry_exceeded",
+        "admin_revoked",
+        "target_offline",
+        "content_violation",
+        "ttl_expired"
+      ]
+    },
+    "delivery_stats": {
+      "type": "object",
+      "description": "Delivery statistics (profile-specific).",
+      "additionalProperties": true
+    },
+    "quota_used": {
+      "type": "object",
+      "description": "Actual resource usage during task.",
+      "properties": {
+        "bandwidth_out_mbps_avg": { "type": "number", "minimum": 0 },
+        "bandwidth_in_mbps_avg": { "type": "number", "minimum": 0 },
+        "connections_peak": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "trust_score_start": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Trust score at task start."
+    },
+    "trust_score_end": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Trust score at task end."
+    },
+    "anomalies_detected": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of anomalies detected during task."
+    },
+    "partial_failure_log": {
+      "type": ["object", "null"],
+      "description": "Partial failure details (for edge-broadcast)."
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Protocol-specific extension fields.",
+      "additionalProperties": true
+    }
+  }
+}

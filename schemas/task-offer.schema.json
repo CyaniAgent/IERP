@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ierp-task-offer-v0.1",
+  "title": "IERP Task Offer",
+  "description": "Schema for IERP TaskOffer message.",
+  "type": "object",
+  "required": ["type", "task_id", "profile", "origin", "subject", "quota", "ttl_seconds"],
+  "additionalProperties": false,
+  "properties": {
+    "type": {
+      "type": "string",
+      "const": "TaskOffer"
+    },
+    "task_id": {
+      "type": "string",
+      "description": "Unique task identifier."
+    },
+    "profile": {
+      "type": "string",
+      "description": "Profile ID (e.g., voice-relay, file-relay, edge-broadcast)."
+    },
+    "origin": {
+      "type": "string",
+      "pattern": "^ierp:.+",
+      "description": "Origin instance peer ID."
+    },
+    "subject": {
+      "type": "string",
+      "description": "Application-defined subject reference (e.g., room_id, file_id)."
+    },
+    "privacy": {
+      "type": "string",
+      "enum": ["public", "private"],
+      "default": "public",
+      "description": "Privacy level of the task."
+    },
+    "quota": {
+      "type": "object",
+      "description": "Requested resource quota.",
+      "properties": {
+        "bandwidth_out_mbps": { "type": "integer", "minimum": 0 },
+        "bandwidth_in_mbps": { "type": "integer", "minimum": 0 },
+        "connections": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": true
+    },
+    "split_policy": {
+      "type": "string",
+      "enum": ["equal", "proportional", "origin-priority"],
+      "default": "equal",
+      "description": "How quota is split among assisting peers."
+    },
+    "ttl_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 86400,
+      "description": "Task time-to-live in seconds."
+    },
+    "constraints": {
+      "type": "object",
+      "description": "Task-specific constraints.",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": ["inbound", "outbound", "bidirectional"],
+          "default": "outbound"
+        },
+        "content_type": {
+          "type": "string",
+          "description": "Allowed payload type (e.g., audio, video, file, post)."
+        },
+        "region_preference": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Preferred regions for assisting peers."
+        }
+      },
+      "additionalProperties": true
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Protocol-specific extension fields.",
+      "additionalProperties": true
+    }
+  }
+}
