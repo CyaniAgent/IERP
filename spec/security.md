@@ -354,7 +354,7 @@ Task-level override  >  Instance-level config  >  Profile-level default  >  Spec
 | `geoip_precision` | `"region"` | enum | `exact`, `region`, `country`, `hidden` | Instance, Task |
 | `encryption_algorithm` | `"aes-256-gcm"` | string | Profile-defined | Profile, Instance |
 | `sensitive_content_action` | `"abort"` | enum | `abort`, `blur`, `redact`, `passthrough` | Profile, Instance |
-| `admin_approval_mode` | `"single"` | enum | `single`, `multi`, `hybrid`, `auto` | Profile, Instance |
+| `admin_approval_mode` | `"single"` | enum | `single`, `multi` | Profile, Instance |
 | `trust_topology` | `"star"` | enum | `star`, `mesh`, `hierarchical` | Profile, Instance |
 
 ### 9.3 Protocol Invariants (Non-Configurable)
@@ -431,16 +431,14 @@ For public posts relayed through edge-broadcast:
 ### 11.6 Administrator Approval
 
 - Protocol implementations MUST include an administrator approval mechanism for edge-broadcast tasks
-- The approval mode is **configurable** — protocol developers MUST support multiple modes, not hardcode a single approach:
+- The approval mode is **configurable** — protocol developers MUST support both modes:
 
-| Mode | Description | Use Case |
-|------|-------------|----------|
-| `single` | One administrator approves | Small deployments, low-risk content |
-| `multi` | Multiple administrators must approve | High-security, high-volume deployments |
-| `hybrid` | Configurable threshold (e.g., 2-of-3 admins) | Balanced security and availability |
-| `auto` | Policy-based automatic approval | Trusted peers, routine operations |
+| Mode | Description | Default |
+|------|-------------|---------|
+| `single` | One administrator approves the task | **Yes** |
+| `multi` | Multiple administrators must approve the task | No |
 
-- Protocol developers MUST NOT enforce a specific approval mode as mandatory — the instance administrator chooses the mode
+- Protocol developers MUST NOT enforce a specific approval mode — the instance administrator chooses between `single` and `multi`
 - The approval mechanism (UI, API, CLI) is implementation-defined; IERP only requires that some form of approval exists
 
 ### 11.7 Sensitive Content Handling

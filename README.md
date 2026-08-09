@@ -19,7 +19,9 @@ IERP is designed for situations where a single instance is under temporary press
 - real-time media fan-out;
 - large file synchronization;
 - chunked file transfer assistance;
-- temporary edge relay or fan-out support.
+- temporary edge relay or fan-out support;
+- temporary outbound bandwidth and connection lending during burst events (live streaming rooms, large media downloads, streaming connection surges);
+- inbound media / federation traffic buffering for large instances or relays under high inbound pressure.
 
 Instead of requiring permanent clusters, centralized CDNs, or global resource pools, IERP lets trusted instances negotiate short-lived assistance tasks.
 
@@ -189,11 +191,14 @@ Preferred quota units include concrete resource measures, such as:
 ```json
 {
   "bandwidth_out_mbps": 50,
+  "bandwidth_in_mbps": 30,
   "connections": 200
 }
 ```
 
 Percentage-based load targets may be used by an application internally, but IERP messages should prefer concrete, interoperable units.
+
+**Temporary bandwidth and connection lending** is a core IERP capability. During burst events (live streaming rooms, large media downloads, streaming connection surges), an instance may request peers to provide limited outbound bandwidth + connection quotas for a specific subject (room ID, media ID, delivery batch). All resources are released immediately upon task completion.
 
 ### Lease
 
@@ -371,6 +376,47 @@ The `edge-broadcast` profile should support:
 - non-public content abort policy;
 - ActivityPub translation layer (independent service).
 
+### `preview-relay`
+
+The `preview-relay` profile solves the link preview request amplification problem ("Mastodon stampede").
+
+Typical use cases:
+
+- a post with a link is broadcast to 100+ instances, each independently fetching the preview;
+- a viral post triggers thousands of GET requests to the target website;
+- request amplification ratio reaches 1,147:1 with traffic amplification of 36,704:1;
+- the target website becomes unresponsive under the request burst.
+
+The `preview-relay` profile should support:
+
+- origin instance fetches OGP preview once and signs it;
+- encrypted preview data is relayed to assisting peers;
+- peers serve preview locally (no fetch to target website);
+- preview cache with configurable TTL;
+- signature verification on receiving end;
+- fallback to standard OGP when preview-relay unavailable.
+
+### `media-relay`
+
+The `media-relay` profile enables temporary assistance with media distribution and transcoding.
+
+Typical use cases:
+
+- popular media (images, videos, GIFs) is fetched by 100+ remote instances simultaneously;
+- origin instance bandwidth is saturated;
+- multiple video uploads trigger concurrent ffmpeg processes, CPU at 100%;
+- large media files (>100MB) benefit from multi-source chunk distribution.
+
+The `media-relay` profile should support:
+
+- media encryption (AES-256-GCM) at rest on assisting peers;
+- chunk manifest with SHA-256 hash verification;
+- HTTP Range request support for parallel download;
+- transcoding offload to peers with available CPU;
+- configurable transcode timeout;
+- strict TTL + max cache size limits;
+- secure cache destruction on task completion.
+
 ---
 
 ## Security model
@@ -503,6 +549,8 @@ profiles/
   voice-relay.md
   file-relay.md
   edge-broadcast.md
+  preview-relay.md
+  media-relay.md
 
 schemas/
   peer.schema.json

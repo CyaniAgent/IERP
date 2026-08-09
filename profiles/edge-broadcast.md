@@ -15,10 +15,30 @@ The `edge-broadcast` profile enables federated social platforms to offload high-
 
 ## 2. Use Cases
 
+### UC-1: Post Broadcasting
+
 - Large post batches (≥50 posts) require broadcast to 50+ remote instances
-- ActivityPub federation queue is congested; origin needs load relief
 - Real-time post delivery with low latency across geographic regions
 - Temporary edge acceleration for trending or viral content
+
+### UC-2: Federation Queue Offloading
+
+When the outbound ActivityPub delivery queue depth exceeds a threshold (e.g., thousands to tens of thousands of pending jobs), and the number of remote target instances is large, the origin instance may offload delivery to trusted IERP peers:
+
+- Origin encrypts a batch of pending ActivityPub activities (or raw payloads)
+- Origin issues edge-broadcast TaskOffer to one or more assisting peers
+- Assisting peers relay activities to target instances, using GeoIP or existing connections for proximity-based delivery
+- Partial failure reporting and exponential backoff retry are supported
+- Upon TaskEnd, all temporary caches are immediately destroyed
+
+**When to trigger (recommended thresholds — configurable):**
+
+| Signal | Threshold (Default) | Action |
+|--------|---------------------|--------|
+| Queue depth | > 5,000 pending jobs | Consider offloading |
+| Queue depth | > 20,000 pending jobs | Urgent offload recommended |
+| Queue latency | > 30 minutes average delay | Offload immediately |
+| Remote instance count | > 100 unique targets | GeoIP-based distribution |
 
 ---
 
@@ -70,7 +90,7 @@ Auto-destroy: cache, token, session state
 | `heartbeat_miss_threshold` | 3 | integer | Consecutive misses before task abort |
 | `quota_burst_threshold_pct` | 150 | integer | Quota burst tolerance (%) |
 | `sensitive_content_action` | `"abort"` | enum | Action on sensitive content: `abort`, `blur`, `redact` |
-| `admin_approval_mode` | `"single"` | enum | Approval mode: `single`, `multi`, `hybrid`, `auto` |
+| `admin_approval_mode` | `"single"` | enum | Approval mode: `single`, `multi` |
 
 ### 4.2 Instance-Level Overrides
 
@@ -289,7 +309,7 @@ Protocol developers implementing edge-broadcast MUST:
 - [ ] Implement GeoIP-based peer selection
 - [ ] Implement retry with exponential backoff
 - [ ] Implement cache encryption and secure destruction
-- [ ] Implement administrator approval mechanism (configurable: single/multi/hybrid/auto)
+- [ ] Implement administrator approval mechanism (configurable: single/multi)
 - [ ] Define sensitive content rules (abort/blur/redact)
 - [ ] Generate Receipts with delivery stats
 - [ ] Implement TaskEnd auto-termination on threshold exceeded
