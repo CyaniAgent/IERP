@@ -272,7 +272,23 @@ If preview-relay is unavailable:
 
 ---
 
-## 13. Implementation Checklist
+## 14. Temporary Tenant Context (TTC)
+
+> **Full specification:** [spec/ierp-core.md](../spec/ierp-core.md)
+
+TTC applicability for `preview-relay` is **low**. Each preview fetch is a single Task with no multi-Task correlation need.
+
+**When TTC IS useful:**
+
+- batch preview prefetch for a large post being broadcast — multiple preview Tasks (one per unique URL) under one TTC;
+- delegated fetch + cache split where one peer fetches and multiple peers cache.
+
+**When TTC is NOT useful:**
+
+- single link preview fetch;
+- small-scale preview relay.
+
+**Recommended `lease_type`:** `cache`
 
 Protocol developers implementing preview-relay MUST:
 

@@ -305,7 +305,47 @@ Upon task completion or failure:
 
 ---
 
-## 13. Implementation Checklist
+## 14. Temporary Tenant Context (TTC)
+
+> **Full specification:** [spec/ierp-core.md](../spec/ierp-core.md)
+
+TTC applicability for `media-relay` is **high**. Media distribution + transcoding naturally splits into multiple Tasks.
+
+**Why TTC is useful:**
+
+A single media file may require:
+
+- multiple cache Tasks (peer-a serves original, peer-b serves original);
+- one or more transcode Tasks (peer-c transcodes to 720p + serves).
+
+All these Tasks are logically one session. TTC groups them for correlation.
+
+**TTC mapping:**
+
+```
+TTC (lease_type: cache)
+├── Task 1 (lease_type: cache) → peer-a (serve original media)
+├── Task 2 (lease_type: cache) → peer-b (serve original media)
+└── Task 3 (lease_type: relay) → peer-c (transcode + serve)
+```
+
+**Recommended `lease_type`:**
+
+| Scenario | `lease_type` |
+|----------|-------------|
+| Pure media serving (no transcode) | `cache` |
+| Transcoding offload | `relay` |
+| Mixed distribution + transcode | `cache` (parent TTC) |
+
+**Operator benefits:**
+
+- track total bandwidth served across all peers for one media file;
+- correlate transcoding Tasks with distribution Tasks;
+- compute per-TTC Receipts for capacity planning.
+
+---
+
+## 15. Implementation Checklist
 
 Protocol developers implementing media-relay MUST:
 

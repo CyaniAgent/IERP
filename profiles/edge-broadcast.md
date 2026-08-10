@@ -299,7 +299,44 @@ See [spec/security.md §11](../spec/security.md#11-edge-broadcast-security-consi
 
 ---
 
-## 13. Implementation Checklist
+## 14. Temporary Tenant Context (TTC)
+
+> **Full specification:** [spec/ierp-core.md](../spec/ierp-core.md)
+
+TTC applicability for `edge-broadcast` is **high**. This is the primary use case for TTC.
+
+**Why TTC is essential:**
+
+A broadcast to N target instances creates N parallel Tasks. Without TTC, these Tasks are logically independent — operators cannot easily correlate them, compute aggregate Receipts, or detect partial failure patterns.
+
+**TTC mapping:**
+
+```
+TTC (lease_type: fanout or hybrid)
+├── Task 1 → peer-a (target: instance-a.example.org)
+├── Task 2 → peer-b (target: instance-b.example.org)
+├── Task 3 → peer-c (target: instance-c.example.org)
+└── ...
+```
+
+**Recommended `lease_type`:**
+
+| Scenario | `lease_type` |
+|----------|-------------|
+| Pure relay (no caching) | `relay` |
+| Relay + edge cache | `hybrid` |
+| High-fan-out viral content | `fanout` |
+
+**Operator benefits:**
+
+- filter logs by `tenant_uuid` to see the full broadcast session;
+- compute aggregate delivery stats across all Tasks in one TTC;
+- detect partial failures (some targets succeed, others fail);
+- dashboard visualization per broadcast session.
+
+---
+
+## 15. Implementation Checklist
 
 Protocol developers implementing edge-broadcast MUST:
 

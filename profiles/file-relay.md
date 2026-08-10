@@ -135,23 +135,22 @@ Auto-destroy: cached chunks
 
 ## 10. Receipt
 
-```json
-{
-  "type": "Receipt",
-  "task_id": "task_01jxyzexample",
-  "profile": "file-relay",
-  "started_at": "2026-01-15T08:00:00Z",
-  "ended_at": "2026-01-15T10:00:00Z",
-  "end_reason": "transfer_complete",
-  "delivery_stats": {
-    "total_chunks": 512,
-    "served_chunks": 512,
-    "failed_chunks": 0,
-    "total_bytes_served": 5368709120
-  },
-  "quota_used": {
-    "bandwidth_out_mbps_avg": 80,
-    "connections_peak": 45
-  }
-}
-```
+---
+
+## 10. Temporary Tenant Context (TTC)
+
+> **Full specification:** [spec/ierp-core.md](../spec/ierp-core.md)
+
+TTC applicability for `file-relay` is **medium**. Multi-source chunk distribution benefits from TTC for correlating per-peer Tasks.
+
+**When TTC IS useful:**
+
+- large file distributed to 5+ assisting peers — each peer gets a separate Task, all under one TTC;
+- file relay with caching + serving split — cache Tasks and serve Tasks share a TTC.
+
+**When TTC is NOT useful:**
+
+- single assisting peer caching the full file;
+- small files with no multi-source distribution.
+
+**Recommended `lease_type`:** `cache`

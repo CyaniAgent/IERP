@@ -104,18 +104,22 @@ Both → Receipt
 
 ## 9. Receipt
 
-```json
-{
-  "type": "Receipt",
-  "task_id": "task_01jxyzexample",
-  "profile": "voice-relay",
-  "started_at": "2026-01-15T08:00:00Z",
-  "ended_at": "2026-01-15T09:00:00Z",
-  "end_reason": "room_ended",
-  "quota_used": {
-    "bandwidth_out_mbps_avg": 35,
-    "connections_peak": 150,
-    "max_listeners_peak": 300
-  }
-}
-```
+---
+
+## 10. Temporary Tenant Context (TVC)
+
+> **Full specification:** [spec/ierp-core.md](../spec/ierp-core.md)
+
+TTC applicability for `voice-relay` is **low**. Each audio room typically generates a single Task with no multi-Task correlation need.
+
+**When TTC IS useful:**
+
+- large audio room with multiple relay tiers (origin → Tier-1 peers → Tier-2 peers) — each tier is a separate Task under one TTC;
+- cross-region audio relay where multiple peers serve different listener groups.
+
+**When TTC is NOT useful:**
+
+- single audio room with one assisting peer;
+- small rooms with no fan-out requirement.
+
+**Recommended `lease_type`:** `relay`

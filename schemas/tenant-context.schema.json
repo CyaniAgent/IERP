@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ierp-tenant-context-v0.1",
+  "title": "IERP Tenant Context",
+  "description": "Schema for IERP Temporary Tenant Context (TTC) — optional aggregation layer on top of Task/Lease.",
+  "type": "object",
+  "required": ["tenant_uuid", "internal_id", "lease_type"],
+  "additionalProperties": false,
+  "properties": {
+    "tenant_uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
+      "description": "Globally unique TTC identifier (UUID v7, RFC 9562). Time-ordered, 48-bit ms timestamp + 74 random bits."
+    },
+    "internal_id": {
+      "type": "string",
+      "pattern": "^[a-zA-Z0-9]{14}$",
+      "description": "Instance-local unique identifier. 14-char alphanumeric, CSPRNG-generated. Used for fast local lookup and human-readable references."
+    },
+    "lease_type": {
+      "type": "string",
+      "enum": ["relay", "cache", "bandwidth", "hybrid", "fanout"],
+      "description": "Classifies the type of resource being temporarily borrowed."
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "TTC creation timestamp (ISO 8601)."
+    },
+    "ttl_seconds": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 86400,
+      "description": "Maximum lifetime of the TTC context in seconds."
+    },
+    "task_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "description": "List of Task IDs correlated under this TTC."
+    },
+    "x_extensions": {
+      "type": "object",
+      "description": "Protocol-specific extension fields.",
+      "additionalProperties": true
+    }
+  }
+}

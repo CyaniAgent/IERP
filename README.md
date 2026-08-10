@@ -206,6 +206,49 @@ A **Lease** keeps a task alive.
 
 Tasks should expire automatically if heartbeats stop. This prevents abandoned tasks from consuming resources indefinitely.
 
+### Temporary Tenant Context (TTC)
+
+> **Full specification:** [spec/ierp-core.md](spec/ierp-core.md)
+
+A **Temporary Tenant Context (TTC)** is an optional aggregation layer on top of Task/Lease. It groups multiple related Tasks under a single temporary identifier for correlation, observability, and resource classification.
+
+TTC is inspired by Azure's ephemeral resource lease patterns, adapted for IERP's temporary relay model.
+
+**Core fields:**
+
+```json
+{
+  "tenant_uuid": "0192e3c4-a5b6-7890-abcd-ef1234567890",
+  "internal_id": "aB3dEfGhIjKlMn",
+  "lease_type": "fanout"
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `tenant_uuid` | UUID v7 (RFC 9562) — globally unique, time-ordered, enables natural sorting |
+| `internal_id` | 14-char alphanumeric — instance-local unique, fast lookup, human-readable |
+| `lease_type` | Enum: `relay`, `cache`, `bandwidth`, `hybrid`, `fanout` |
+
+**TTC is NOT:**
+
+- a new sovereignty entity — it's a logical grouping container;
+- a persistent state — it's destroyed after task completion;
+- a content authority — relay peers don't gain data/moderation authority;
+- a mandatory mechanism — it's optional; implementations may ignore `tenant_context` fields.
+
+**When to use TTC:**
+
+- edge-broadcast to N target instances = 1 TTC with N parallel Tasks;
+- media-relay with distribution + transcoding = 1 TTC with mixed `lease_type` Tasks;
+- file-relay with multi-source chunks = 1 TTC with per-peer Tasks.
+
+**When TTC is unnecessary:**
+
+- single voice-relay Task (no correlation needed);
+- simple file-relay with one assisting peer;
+- any scenario where Tasks are logically independent.
+
 ### Receipt
 
 A **Receipt** records the final or interim usage of a task.
@@ -315,6 +358,8 @@ Both sides record usage receipts.
 
 ### `voice-relay`
 
+> **TTC applicability:** Low — single Task per audio room, no multi-Task correlation needed.
+
 The `voice-relay` profile is intended for temporary assistance with live audio distribution.
 
 Typical use cases:
@@ -334,6 +379,8 @@ The `voice-relay` profile should support:
 - privacy-level restrictions.
 
 ### `file-relay`
+
+> **TTC applicability:** Medium — multi-source chunk distribution may use 1 TTC with N per-peer Tasks.
 
 The `file-relay` profile is intended for temporary assistance with large file transfer or synchronization.
 
@@ -355,6 +402,8 @@ The `file-relay` profile should support:
 - explicit no-persist or temporary-cache policies.
 
 ### `edge-broadcast`
+
+> **TTC applicability:** High — broadcast to N target instances = 1 TTC with N parallel Tasks. `lease_type: fanout` or `hybrid`.
 
 The `edge-broadcast` profile is intended for high-volume post broadcasting across federated social instances.
 
@@ -378,6 +427,8 @@ The `edge-broadcast` profile should support:
 
 ### `preview-relay`
 
+> **TTC applicability:** Low — single preview fetch + cache per task, no multi-Task correlation needed.
+
 The `preview-relay` profile solves the link preview request amplification problem ("Mastodon stampede").
 
 Typical use cases:
@@ -397,6 +448,8 @@ The `preview-relay` profile should support:
 - fallback to standard OGP when preview-relay unavailable.
 
 ### `media-relay`
+
+> **TTC applicability:** High — distribution + transcoding = 1 TTC with mixed `lease_type` Tasks (`cache` + `relay`).
 
 The `media-relay` profile enables temporary assistance with media distribution and transcoding.
 
@@ -561,6 +614,7 @@ schemas/
   task-heartbeat.schema.json
   task-end.schema.json
   receipt.schema.json
+  tenant-context.schema.json
 
 examples/
   peer-invite.json
