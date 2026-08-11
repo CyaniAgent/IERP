@@ -9,7 +9,34 @@
 
 ## 1. Purpose
 
-The `edge-broadcast` profile enables federated social platforms to offload high-volume post broadcasting to trusted IERP peers. When an instance needs to deliver a batch of posts (≥ `batch_size_threshold`) to multiple remote instances, ActivityPub alone may become bottlenecked. This profile allows the origin instance to invite trusted peers to assist with edge-level content distribution using GeoIP-based就近 routing.
+The `edge-broadcast` profile enables federated social platforms to offload high-volume post broadcasting to trusted IERP peers. When an instance needs to deliver a batch of posts (≥ `batch_size_threshold`) to many recipients, ActivityPub alone may become bottlenecked. This profile allows the origin instance to invite trusted peers to assist with edge-level content distribution using GeoIP-based routing.
+
+### 1.1 Dual Delivery Paths
+
+edge-broadcast operates through two **independent** delivery paths:
+
+```
+                    Origin
+                      │
+               IERP Broadcast (TTC)
+                      │
+            ┌─────────┼─────────┐
+            ▼         ▼         ▼
+          Peer A    Peer B    Peer C     ← IERP native path (trusted Peers)
+            │         │         │
+         clients   clients   clients     ← Peer internal fan-out (outside IERP scope)
+
+          ┌─────────┼─────────┐
+          ▼         ▼         ▼
+        AP Inst   AP Inst   AP Inst     ← ActivityPub path (requires translation layer)
+```
+
+| Path | Scope | Requirement |
+|------|-------|-------------|
+| **IERP native** | Origin → trusted Peers | IERP protocol — always available |
+| **ActivityPub translation** | Origin → AP-compatible instances | Protocol developer implements translation layer (outside IERP scope) |
+
+**Normative requirement:** Unless the protocol developer has implemented an ActivityPub translation compatibility layer, broadcast ONLY reaches trusted Peers and does NOT reach ActivityPub instances. IERP does not mandate ActivityPub support.
 
 ---
 
@@ -44,22 +71,24 @@ When the outbound ActivityPub delivery queue depth exceeds a threshold (e.g., th
 
 ## 3. Task Semantics
 
-A single `Task` in edge-broadcast represents **delivery to one target instance**. For a broadcast to N target instances, the origin creates N parallel tasks.
+A single `Task` in edge-broadcast represents **delivery to one assisting Peer**. The Peer is responsible for fan-out to its assigned clients. IERP protocol scope is Origin ↔ Peer — the Peer's internal fan-out to clients, and any ActivityPub translation, are outside IERP protocol scope.
+
+For a broadcast to N Peers, the origin creates N parallel Tasks, optionally grouped under one TTC.
 
 ### 3.1 Task Lifecycle
 
 ```
-Origin selects assisting peers via GeoIP + trust score
+Origin selects assisting Peers via GeoIP + trust score
     ↓
-Origin → TaskOffer(batch_size, target_peer, content_visibility)
+Origin → TaskOffer(batch_size, client_count, content_visibility)
     ↓
 Peer → TaskClaim
     ↓
 Origin → TaskGrant(geoip_hint, encryption_key_ref)
     ↓
-Peer relays posts (AES-256 encrypted, Base64 + salt)
+Peer relays posts to clients (AES-256 encrypted, Base64 + salt)
     ↓
-Peer → TaskHeartbeat(delivered_count, failed_count)
+Peer → TaskHeartbeat(delivered_count, failed_count, clients_served)
     ↓
 Origin → TaskEnd
     ↓
@@ -91,6 +120,7 @@ Auto-destroy: cache, token, session state
 | `quota_burst_threshold_pct` | 150 | integer | Quota burst tolerance (%) |
 | `sensitive_content_action` | `"abort"` | enum | Action on sensitive content: `abort`, `blur`, `redact` |
 | `admin_approval_mode` | `"single"` | enum | Approval mode: `single`, `multi` |
+| `max_clients_per_peer` | 5000 | integer | Maximum clients a single Peer can serve |
 
 ### 4.2 Instance-Level Overrides
 
@@ -113,9 +143,10 @@ The following parameters MAY be overridden in individual TaskOffer constraints:
 {
   "batch_size": 75,
   "bandwidth_out_mbps": 50,
-  "connections": 10,
+  "connections": 1000,
   "max_post_size_bytes": 1048576,
-  "max_total_payload_bytes": 52428800
+  "max_total_payload_bytes": 52428800,
+  "client_count": 1000
 }
 ```
 
@@ -123,9 +154,10 @@ The following parameters MAY be overridden in individual TaskOffer constraints:
 |-------|------|-------------|
 | `batch_size` | integer | Number of posts in this delivery batch |
 | `bandwidth_out_mbps` | integer | Maximum outbound bandwidth |
-| `connections` | integer | Max concurrent connections to target |
+| `connections` | integer | Max concurrent connections to clients served by this Peer |
 | `max_post_size_bytes` | integer | Largest single post payload |
 | `max_total_payload_bytes` | integer | Total payload size limit for the batch |
+| `client_count` | integer | Number of clients this Peer is expected to serve |
 
 ---
 
@@ -219,7 +251,7 @@ Upon task completion or failure:
 
 ## 9. Translation Layer (IERP ↔ ActivityPub)
 
-Protocol developers who wish to maintain ActivityPub compatibility MUST implement a translation layer as an independent service.
+The ActivityPub translation layer is an **optional, independent service** implemented by the protocol developer. It is **outside IERP protocol scope** — IERP does not define AP translation semantics, message formats, or delivery guarantees.
 
 ### 9.1 Requirements
 
@@ -228,6 +260,7 @@ Protocol developers who wish to maintain ActivityPub compatibility MUST implemen
 - MUST understand `inbox` / `outbox` semantics
 - SHOULD translate all ActivityPub vocabulary
 - IERP version and ActivityPub version are independently versioned
+- Translation layer MAY be built on top of IERP relay infrastructure
 
 ### 9.2 Protocol Priority
 
@@ -235,23 +268,44 @@ Protocol developers who wish to maintain ActivityPub compatibility MUST implemen
 |----------|----------|-----------|
 | P0 | IERP native | Both instances support IERP and have trust relationship |
 | P1 | IERP + AP translation | One instance only supports ActivityPub |
-| P2 | Pure ActivityPub | No IERP trust relationship |
+| P2 | Pure ActivityPub | No IERP trust relationship — outside IERP scope |
 
 ---
 
 ## 10. Trust Topology
 
-Recommended trust model for edge-broadcast:
+### 10.1 IERP Native Path (Protocol Scope)
 
 ```
-Origin Instance ←→ Assisting Peer ←→ Target Instance
-     (A)               (B)                (C)
+Origin ──IERP──→ Peer A ──→ clients
+Origin ──IERP──→ Peer B ──→ clients
+Origin ──IERP──→ Peer C ──→ clients
 ```
 
-- All three parties (A, B, C) SHOULD have mutual trust
-- Post relay content is the responsibility of origin (A) and target (C)
-- Assisting peer (B) acts as transparent relay — no content authority
-- Protocol developers MAY implement alternative topologies (mesh, hierarchical)
+- Origin selects assisting Peers via GeoIP + trust score
+- Each Peer receives a TaskOffer, claims capacity, and relays posts
+- Peer internal fan-out to clients is outside IERP protocol scope
+- All Peers act as transparent relays — no content authority
+
+### 10.2 ActivityPub Translation Path (Outside Protocol Scope)
+
+```
+Origin ──[Translation Layer]──→ AP Instance 1
+Origin ──[Translation Layer]──→ AP Instance 2
+```
+
+- Protocol developer implements the translation layer as an independent service
+- IERP does not define AP translation semantics, message formats, or delivery guarantees
+- Translation layer MAY be built on top of IERP relay infrastructure
+- See §9 for translation layer requirements
+
+### 10.3 Protocol Priority
+
+| Priority | Path | Condition |
+|----------|------|-----------|
+| P0 | IERP native | Both instances support IERP and have trust relationship |
+| P1 | IERP + AP translation | One instance only supports ActivityPub |
+| P2 | Pure ActivityPub | No IERP trust relationship — outside IERP scope |
 
 ---
 
@@ -263,7 +317,6 @@ Origin Instance ←→ Assisting Peer ←→ Target Instance
   "task_id": "task_01jxyzexample",
   "profile": "edge-broadcast",
   "peer": "ierp:edge.example.net",
-  "target": "ierp:target.example.org",
   "started_at": "2026-01-15T08:00:00Z",
   "ended_at": "2026-01-15T08:05:00Z",
   "end_reason": "normal",
@@ -271,11 +324,12 @@ Origin Instance ←→ Assisting Peer ←→ Target Instance
     "batch_size": 75,
     "delivered": 75,
     "failed": 0,
-    "avg_latency_ms": 45
+    "avg_latency_ms": 45,
+    "clients_served": 1000
   },
   "quota_used": {
     "bandwidth_out_mbps_avg": 35,
-    "connections_peak": 8
+    "connections_peak": 800
   },
   "trust_score_start": 85,
   "trust_score_end": 87,
@@ -307,16 +361,15 @@ TTC applicability for `edge-broadcast` is **high**. This is the primary use case
 
 **Why TTC is essential:**
 
-A broadcast to N target instances creates N parallel Tasks. Without TTC, these Tasks are logically independent — operators cannot easily correlate them, compute aggregate Receipts, or detect partial failure patterns.
+A broadcast to N Peers creates N parallel Tasks. Without TTC, these Tasks are logically independent — operators cannot easily correlate them, compute aggregate Receipts, or detect partial failure patterns.
 
-**TTC mapping:**
+**TTC mapping (per-Peer model):**
 
 ```
-TTC (lease_type: fanout or hybrid)
-├── Task 1 → peer-a (target: instance-a.example.org)
-├── Task 2 → peer-b (target: instance-b.example.org)
-├── Task 3 → peer-c (target: instance-c.example.org)
-└── ...
+TTC (lease_type: fanout)
+├── Task 1 → peer-a (clients: 1000)
+├── Task 2 → peer-b (clients: 1000)
+└── Task 3 → peer-c (clients: 1000)
 ```
 
 **Recommended `lease_type`:**
@@ -331,7 +384,7 @@ TTC (lease_type: fanout or hybrid)
 
 - filter logs by `tenant_uuid` to see the full broadcast session;
 - compute aggregate delivery stats across all Tasks in one TTC;
-- detect partial failures (some targets succeed, others fail);
+- detect partial failures (some Peers succeed, others fail);
 - dashboard visualization per broadcast session.
 
 ---

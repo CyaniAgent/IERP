@@ -635,6 +635,28 @@ reference/
   ierp-edge/
 ```
 
+### `schemas/` — Canonical JSON Templates
+
+Each file in `schemas/` is a **typical regular JSON example** (canonical JSON template) that defines the normative structure of an IERP message type. These templates:
+
+- define the required fields, types, and constraints for each message;
+- serve as the single source of truth for message structure;
+- are referenced by profiles and specs when describing message formats;
+- use `additionalProperties: true` where extensions are allowed.
+
+**Schemas are NOT code.** They are declarative JSON templates that implementers read and translate into their chosen language's data structures.
+
+### `examples/` — Language-Specific Implementation Examples
+
+Each file in `examples/` is a **reference implementation** in a specific programming language, based on the canonical templates in `schemas/`. These examples:
+
+- demonstrate how to construct and parse IERP messages in a real language;
+- show idiomatic patterns (Go structs, TypeScript interfaces, Python dataclasses, etc.);
+- include comments explaining protocol-specific logic;
+- are derived from the canonical `schemas/` templates but are NOT normative.
+
+**Examples are NOT schemas.** They are implementation guides. The canonical message structure is defined in `schemas/`, not in `examples/`.
+
 Not all directories are required for every implementation.
 
 ---
